@@ -1,7 +1,23 @@
 #!/bin/bash
-echo "--- Connectivity Report ---"
+
+echo "===== NETWORK DIAGNOSTIC REPORT ====="
+
+echo ""
+echo "1. Connectivity Test"
 ping -c 3 google.com
-echo "--- DNS Resolution ---"
+
+echo ""
+echo "2. DNS Resolution"
 nslookup github.com
-echo "--- Port 80/443 Check ---"
-nc -zv google.com 80 443
+
+echo ""
+echo "3. Port Connectivity Check"
+nc -zv google.com 80
+nc -zv google.com 443
+
+echo ""
+echo "4. Route Trace"
+traceroute google.com
+
+echo ""
+echo "===== END REPORT ====="
