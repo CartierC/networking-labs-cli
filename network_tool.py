@@ -4,17 +4,17 @@ import socket
 
 def ping(host):
     print(f"\nPinging {host}\n")
-    subprocess.run(["ping", "-c", "4", host], check=False)
+    subprocess.run(["ping", "-c", "4", host])
 
 
 def traceroute(host):
     print(f"\nTraceroute to {host}\n")
-    subprocess.run(["traceroute", host], check=False)
+    subprocess.run(["traceroute", host])
 
 
 def dns_lookup(host):
     print(f"\nDNS Lookup for {host}\n")
-    subprocess.run(["nslookup", host], check=False)
+    subprocess.run(["nslookup", host])
 
 
 def port_scan(host):
