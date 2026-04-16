@@ -1,52 +1,60 @@
-# Lab 02: Network Connectivity Troubleshooting
+# Lab 02 — Network Connectivity Diagnostics
 
 ## Objective
-Determine whether a host can reach external networks and identify where connectivity fails.
+Demonstrate production-grade network troubleshooting using a Python CLI tool with AWS integration.
 
-## Tools
-- ping
-- traceroute / tracert
-- ipconfig / ifconfig
+## Environment
+- Python 3.10+
+- AWS Free Tier account (configured via `aws configure`)
+- Linux/macOS terminal
 
-## Steps
+## Commands Executed
 
-### 1 — Verify Local Network Configuration
+### 1. ICMP Connectivity Check
+```bash
+nmcli ping google.com --count 4
+```
+**Expected:** 0% packet loss, round-trip time < 50ms to public hosts.
 
-Windows:
+### 2. Route Path Analysis
+```bash
+nmcli traceroute google.com
+```
+**Expected:** Full hop-by-hop path showing ISP → backbone → destination.
 
-ipconfig
+### 3. DNS Resolution
+```bash
+nmcli dns github.com
+```
+**Expected:** A record (IPv4), AAAA record (IPv6), PTR reverse lookup.
 
-Linux:
+### 4. Port Audit
+```bash
+nmcli portscan github.com --ports 22 80 443
+```
+**Expected:** SSH (22), HTTP (80), HTTPS (443) all OPEN.
 
-ifconfig
+### 5. AWS VPC Inspection
+```bash
+nmcli aws-vpc
+```
+**Expected:** Table output showing VPC ID, CIDR block, default status.
 
-Confirm the system has a valid IP address.
+### 6. EC2 Instance Inventory
+```bash
+nmcli aws-ec2
+```
+**Expected:** Instance ID, type, state, public IP for all running instances.
 
----
+## Key Concepts Demonstrated
+- TCP socket connection state (OPEN/CLOSED)
+- DNS record types: A, AAAA, PTR
+- ICMP packet behavior and latency
+- AWS VPC architecture and CIDR notation
+- boto3 SDK authentication via IAM credentials
 
-### 2 — Test External Connectivity
-
-ping google.com
-
-Expected result:
-Packets return successfully.
-
----
-
-### 3 — Trace the Network Path
-
-Windows:
-
-tracert google.com
-
-Linux:
-
-traceroute google.com
-
-This identifies where packets stop along the route.
-
----
-
-## Result
-
-Connectivity testing confirms whether the system can communicate with external hosts.
+## Real-World Application
+This workflow mirrors L1/L2 network triage used by cloud engineers to:
+- Validate connectivity after VPC changes
+- Audit exposed ports on EC2 instances
+- Confirm DNS propagation after Route 53 updates
