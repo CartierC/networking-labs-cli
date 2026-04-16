@@ -1,4 +1,4 @@
-# Networking Labs CLI
+# > Production-grade network diagnostics and AWS infrastructure automation tool built with Python, boto3, and argparse.
 
 Collection of command-line networking labs and automation tools for troubleshooting and cloud engineering practice.
 
