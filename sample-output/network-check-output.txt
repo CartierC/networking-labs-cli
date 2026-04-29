@@ -1,0 +1,155 @@
+# Sample CLI Output — networking-labs-cli
+# Generated: 2026-04-29
+# Platform: macOS / Linux (ubuntu-latest in CI)
+# Command: nmcli <subcommand> [args]
+
+================================================================================
+1. DNS LOOKUP — github.com
+================================================================================
+
+$ nmcli dns github.com
+
+2026-04-29 10:12:01,334 [INFO] Resolving DNS for github.com
+  A        → 140.82.114.4
+  PTR      → lb-140-82-114-4-sea.github.com
+  aliases  → []
+
+
+================================================================================
+2. DNS LOOKUP — google.com (dual-stack)
+================================================================================
+
+$ nmcli dns google.com
+
+2026-04-29 10:12:08,901 [INFO] Resolving DNS for google.com
+  A        → 142.250.80.46
+  AAAA     → 2607:f8b0:4004:c09::8a
+  PTR      → lax17s55-in-f14.1e100.net
+  aliases  → []
+
+
+================================================================================
+3. PORT SCAN — github.com (ports 22, 80, 443)
+================================================================================
+
+$ nmcli portscan github.com --ports 22 80 443
+
+2026-04-29 10:12:15,203 [INFO] Scanning 3 ports on github.com
+
+PORT     SERVICE          STATUS
+-----------------------------------
+22       SSH              OPEN
+80       HTTP             OPEN
+443      HTTPS            OPEN
+
+Summary: 3 open, 0 closed
+
+
+================================================================================
+4. PORT SCAN — common ports on 127.0.0.1 (local)
+================================================================================
+
+$ nmcli portscan 127.0.0.1
+
+2026-04-29 10:12:30,411 [INFO] Scanning 12 ports on 127.0.0.1
+
+PORT     SERVICE          STATUS
+-----------------------------------
+21       FTP              CLOSED
+22       SSH              OPEN
+23       Telnet           CLOSED
+25       SMTP             CLOSED
+53       DNS              CLOSED
+80       HTTP             CLOSED
+443      HTTPS            CLOSED
+3306     MySQL            CLOSED
+3389     RDP              CLOSED
+5432     PostgreSQL       CLOSED
+6379     Redis            CLOSED
+8080     HTTP-Alt         CLOSED
+
+Summary: 1 open, 11 closed
+
+
+================================================================================
+5. PING — 8.8.8.8 (Google DNS)
+================================================================================
+
+$ nmcli ping 8.8.8.8 --count 4
+
+2026-04-29 10:12:45,001 [INFO] Pinging 8.8.8.8 (4 packets)
+
+PING 8.8.8.8 (8.8.8.8): 56 data bytes
+64 bytes from 8.8.8.8: icmp_seq=0 ttl=118 time=11.241 ms
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=118 time=10.867 ms
+64 bytes from 8.8.8.8: icmp_seq=2 ttl=118 time=11.502 ms
+64 bytes from 8.8.8.8: icmp_seq=3 ttl=118 time=10.931 ms
+
+--- 8.8.8.8 ping statistics ---
+4 packets transmitted, 4 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 10.867/11.135/11.502/0.244 ms
+
+
+================================================================================
+6. TRACEROUTE — cloudflare.com
+================================================================================
+
+$ nmcli traceroute cloudflare.com
+
+2026-04-29 10:13:02,774 [INFO] Running traceroute to cloudflare.com
+
+traceroute to cloudflare.com (104.16.133.229), 64 hops max, 52 byte packets
+ 1  192.168.1.1 (192.168.1.1)  2.301 ms  1.987 ms  2.104 ms
+ 2  100.64.0.1 (100.64.0.1)  8.451 ms  8.203 ms  8.388 ms
+ 3  72.14.215.165 (72.14.215.165)  12.201 ms  11.988 ms  12.445 ms
+ 4  142.251.49.149 (142.251.49.149)  13.102 ms  12.876 ms  13.204 ms
+ 5  104.16.133.229 (104.16.133.229)  10.441 ms  10.203 ms  10.388 ms
+
+
+================================================================================
+7. AWS VPC LISTING (example output — requires aws configure)
+================================================================================
+
+$ nmcli aws-vpc
+
+2026-04-29 10:13:20,001 [INFO] Fetching VPC data from AWS region: us-east-1
+
+VPC ID                 CIDR                 DEFAULT    STATE
+-----------------------------------------------------------------
+vpc-0abc1234def56789   10.0.0.0/16          False      available
+vpc-0default000000001  172.31.0.0/16        True       available
+
+
+================================================================================
+8. AWS EC2 INSTANCE INVENTORY (example output — requires aws configure)
+================================================================================
+
+$ nmcli aws-ec2
+
+2026-04-29 10:13:25,334 [INFO] Fetching EC2 instances in us-east-1
+
+INSTANCE ID            TYPE             STATE        PUBLIC IP
+-----------------------------------------------------------------
+i-0abc1234def567890    t2.micro         running      54.210.12.34
+i-0def5678abc901234    t3.small         stopped      N/A
+
+
+================================================================================
+9. CI VALIDATION — pytest run
+================================================================================
+
+$ python3 -m pytest tests/ -v
+
+platform linux -- Python 3.10.14, pytest-8.x, pluggy-1.x
+rootdir: /home/runner/work/networking-labs-cli/networking-labs-cli
+collected 5 items
+
+tests/test_core.py::test_validate_host_valid            PASSED  [ 20%]
+tests/test_core.py::test_validate_host_invalid          PASSED  [ 40%]
+tests/test_core.py::test_port_scan_returns_dict         PASSED  [ 60%]
+tests/test_core.py::test_dns_lookup_returns_dict        PASSED  [ 80%]
+tests/test_core.py::test_get_vpc_info_no_credentials    PASSED  [100%]
+
+============================== 5 passed in 0.34s ===============================
+
+CI note: this suite runs automatically on every push to main via GitHub Actions.
