@@ -1,0 +1,102 @@
+# Sample Output: Connectivity Test (Ping + Traceroute)
+# Commands: nmcli ping <host> [--count N] | nmcli traceroute <host>
+# Tool: networking-labs-cli
+# Function: nmcli/core.py → ping(), traceroute()
+# Date: 2026-04-29
+
+================================================================================
+PING EXAMPLE 1 — 8.8.8.8 (Google DNS) — successful
+================================================================================
+
+$ nmcli ping 8.8.8.8 --count 4
+
+2026-04-29 10:20:01 [INFO] Pinging 8.8.8.8 (4 packets)
+
+PING 8.8.8.8 (8.8.8.8): 56 data bytes
+64 bytes from 8.8.8.8: icmp_seq=0 ttl=118 time=11.241 ms
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=118 time=10.867 ms
+64 bytes from 8.8.8.8: icmp_seq=2 ttl=118 time=11.502 ms
+64 bytes from 8.8.8.8: icmp_seq=3 ttl=118 time=10.931 ms
+
+--- 8.8.8.8 ping statistics ---
+4 packets transmitted, 4 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 10.867/11.135/11.502/0.244 ms
+
+RESULT: Host is reachable. Low latency. 0% packet loss. Healthy.
+
+
+================================================================================
+PING EXAMPLE 2 — unreachable host (failure case)
+================================================================================
+
+$ nmcli ping 10.0.5.99 --count 4
+
+2026-04-29 10:20:30 [INFO] Pinging 10.0.5.99 (4 packets)
+
+PING 10.0.5.99 (10.0.5.99): 56 data bytes
+Request timeout for icmp_seq 0
+Request timeout for icmp_seq 1
+Request timeout for icmp_seq 2
+Request timeout for icmp_seq 3
+
+--- 10.0.5.99 ping statistics ---
+4 packets transmitted, 0 packets received, 100.0% packet loss
+
+2026-04-29 10:20:34 [WARNING] Ping failed for 10.0.5.99
+
+RESULT: Host unreachable. Likely causes:
+  - ICMP blocked by AWS security group or NACL
+  - Instance is stopped
+  - No route exists to this subnet
+
+
+================================================================================
+TRACEROUTE EXAMPLE 1 — cloudflare.com — clean path
+================================================================================
+
+$ nmcli traceroute cloudflare.com
+
+2026-04-29 10:21:00 [INFO] Running traceroute to cloudflare.com
+
+traceroute to cloudflare.com (104.16.133.229), 64 hops max, 52 byte packets
+ 1  192.168.1.1 (192.168.1.1)        2.301 ms    1.987 ms    2.104 ms
+ 2  100.64.0.1 (100.64.0.1)          8.451 ms    8.203 ms    8.388 ms
+ 3  72.14.215.165 (72.14.215.165)   12.201 ms   11.988 ms   12.445 ms
+ 4  142.251.49.149 (142.251.49.149) 13.102 ms   12.876 ms   13.204 ms
+ 5  104.16.133.229 (104.16.133.229) 10.441 ms   10.203 ms   10.388 ms
+
+RESULT: Clean 5-hop path. Destination reached. Normal latency at each hop.
+
+
+================================================================================
+TRACEROUTE EXAMPLE 2 — host with filtered hops
+================================================================================
+
+$ nmcli traceroute github.com
+
+traceroute to github.com (140.82.114.4), 64 hops max, 52 byte packets
+ 1  192.168.1.1 (192.168.1.1)       2.1 ms    2.0 ms    1.9 ms
+ 2  100.64.0.1 (100.64.0.1)         8.3 ms    8.1 ms    8.4 ms
+ 3  * * *
+ 4  * * *
+ 5  140.82.114.4 (140.82.114.4)    14.2 ms   13.9 ms   14.1 ms
+
+RESULT: Hops 3-4 filter ICMP (common on backbone routers). Destination
+        responds — path is working. Asterisks do NOT indicate a break.
+
+
+================================================================================
+HOW TO INTERPRET RESULTS
+================================================================================
+
+  Ping 0% loss, <50ms    Healthy connectivity to a public host
+  Ping 0% loss, >200ms   Reachable but high latency — investigate routing
+  Ping 100% loss         Host unreachable OR ICMP blocked (check SG/NACL)
+  Traceroute * * *       That hop filters ICMP — not necessarily a break
+  Traceroute stops early Path is broken at the last responding hop
+
+REAL-WORLD USE:
+  - First check after an EC2 instance is launched or restarted
+  - Validate connectivity after a VPC route table change
+  - Identify where in the path a packet is being dropped
+  - Confirm public internet reachability from a new subnet

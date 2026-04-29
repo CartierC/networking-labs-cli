@@ -1,0 +1,67 @@
+# Sample Output: DNS Lookup
+# Command: nmcli dns <hostname>
+# Tool: networking-labs-cli
+# Function: nmcli/core.py → dns_lookup()
+# Date: 2026-04-29
+
+================================================================================
+EXAMPLE 1 — google.com (dual-stack host)
+================================================================================
+
+$ nmcli dns google.com
+
+2026-04-29 10:12:08 [INFO] Resolving DNS for google.com
+  A        → 142.250.80.46
+  AAAA     → 2607:f8b0:4004:c09::8a
+  PTR      → lax17s55-in-f14.1e100.net
+  aliases  → []
+
+
+================================================================================
+EXAMPLE 2 — github.com (IPv4 only)
+================================================================================
+
+$ nmcli dns github.com
+
+2026-04-29 10:12:15 [INFO] Resolving DNS for github.com
+  A        → 140.82.114.4
+  PTR      → lb-140-82-114-4-sea.github.com
+  aliases  → []
+
+
+================================================================================
+EXAMPLE 3 — cloudflare.com
+================================================================================
+
+$ nmcli dns cloudflare.com
+
+2026-04-29 10:12:22 [INFO] Resolving DNS for cloudflare.com
+  A        → 104.16.133.229
+  AAAA     → 2606:4700::6810:85e5
+  PTR      → (reverse DNS not configured)
+  aliases  → []
+
+
+================================================================================
+EXAMPLE 4 — invalid host (failure case)
+================================================================================
+
+$ nmcli dns thishostdoesnotexist.invalid
+
+2026-04-29 10:12:30 [ERROR] DNS resolution failed: [Errno 8] Nodename nor servname provided, or not known
+
+
+================================================================================
+WHAT THESE RECORDS MEAN
+================================================================================
+
+  A record    IP address the domain resolves to (IPv4)
+  AAAA record IPv6 address (dual-stack hosts only)
+  PTR record  Reverse DNS — what hostname maps back from the IP
+  aliases     CNAME chain or alternative hostnames
+
+REAL-WORLD USE:
+  - Verify DNS propagated after a Route 53 record change
+  - Confirm the A record points to the correct load balancer IP
+  - Check PTR record exists for mail server (required by spam filters)
+  - Identify whether a host is dual-stack (A + AAAA) or IPv4-only

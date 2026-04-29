@@ -1,0 +1,89 @@
+# Sample Output: Port Check (Port Scan)
+# Command: nmcli portscan <host> [--ports N ...]
+# Tool: networking-labs-cli
+# Function: nmcli/core.py → port_scan()
+# Date: 2026-04-29
+
+================================================================================
+EXAMPLE 1 — github.com, specific ports (22, 80, 443)
+================================================================================
+
+$ nmcli portscan github.com --ports 22 80 443
+
+2026-04-29 10:15:01 [INFO] Scanning 3 ports on github.com
+
+PORT     SERVICE          STATUS
+-----------------------------------
+22       SSH              OPEN
+80       HTTP             OPEN
+443      HTTPS            OPEN
+
+Summary: 3 open, 0 closed
+
+
+================================================================================
+EXAMPLE 2 — Full common-port sweep on a local host
+================================================================================
+
+$ nmcli portscan 192.168.1.1
+
+2026-04-29 10:15:20 [INFO] Scanning 12 ports on 192.168.1.1
+
+PORT     SERVICE          STATUS
+-----------------------------------
+21       FTP              CLOSED
+22       SSH              OPEN
+23       Telnet           CLOSED
+25       SMTP             CLOSED
+53       DNS              OPEN
+80       HTTP             OPEN
+443      HTTPS            CLOSED
+3306     MySQL            CLOSED
+3389     RDP              CLOSED
+5432     PostgreSQL        CLOSED
+6379     Redis            CLOSED
+8080     HTTP-Alt         CLOSED
+
+Summary: 3 open, 9 closed
+
+
+================================================================================
+EXAMPLE 3 — EC2 instance with only 443 open (hardened)
+================================================================================
+
+$ nmcli portscan 54.210.12.34 --ports 22 80 443 8080
+
+2026-04-29 10:15:45 [INFO] Scanning 4 ports on 54.210.12.34
+
+PORT     SERVICE          STATUS
+-----------------------------------
+22       SSH              CLOSED
+80       HTTP             CLOSED
+443      HTTPS            OPEN
+8080     HTTP-Alt         CLOSED
+
+Summary: 1 open, 3 closed
+
+
+================================================================================
+PORTS REFERENCE
+================================================================================
+
+  21    FTP       File transfer — rarely open in cloud; use SFTP instead
+  22    SSH       Remote access — should be restricted to known IPs in AWS SG
+  23    Telnet    Unencrypted remote access — should never be open
+  25    SMTP      Mail — open only on mail relay servers
+  53    DNS       Domain resolution — open on resolvers and DNS servers
+  80    HTTP      Web traffic — open on web servers, often redirects to 443
+  443   HTTPS     Encrypted web — should be open on all web-facing services
+  3306  MySQL     Database — should NEVER be open to 0.0.0.0/0
+  3389  RDP       Windows remote desktop — restrict to admin IPs only
+  5432  PostgreSQL Database — same rules as MySQL
+  6379  Redis     Cache — should be restricted to internal subnets only
+  8080  HTTP-Alt  Dev/proxy — close in production unless intentional
+
+REAL-WORLD USE:
+  - Audit exposed ports after deploying or modifying an EC2 security group
+  - Verify a web server is listening on 443 after TLS cert setup
+  - Confirm a database port is NOT reachable from outside the VPC
+  - Check if SSH is locked down before a security review

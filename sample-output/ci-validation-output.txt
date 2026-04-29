@@ -1,0 +1,115 @@
+# Sample Output: CI Validation (GitHub Actions + pytest)
+# Workflow: .github/workflows/test.yml
+# Trigger: push to main
+# Runner: ubuntu-latest, Python 3.10
+# Date: 2026-04-29
+
+================================================================================
+GITHUB ACTIONS WORKFLOW — test.yml
+================================================================================
+
+name: Run Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: |
+          pip install boto3 botocore pytest
+          pip install -e .
+      - name: Run tests
+        run: pytest tests/ -v
+
+
+================================================================================
+PIPELINE RUN — PASSING (current state)
+================================================================================
+
+Run networking-labs-cli / test (push)
+Triggered by: push to main
+Status: SUCCESS
+
+Step 1: actions/checkout@v4
+  ✓ Checked out repository
+
+Step 2: Set up Python 3.10
+  ✓ Python 3.10.14 installed
+
+Step 3: Install dependencies
+  Collecting boto3...
+  Collecting botocore...
+  Collecting pytest...
+  Successfully installed boto3-1.34.x botocore-1.34.x pytest-8.x
+  Obtaining file:///home/runner/work/networking-labs-cli
+  Successfully installed networking-labs-cli-1.0.0
+
+Step 4: Run tests
+  ============================= test session starts ==============================
+  platform linux -- Python 3.10.14, pytest-8.x, pluggy-1.x
+  rootdir: /home/runner/work/networking-labs-cli/networking-labs-cli
+  collected 5 items
+
+  tests/test_core.py::test_validate_host_valid            PASSED  [ 20%]
+  tests/test_core.py::test_validate_host_invalid          PASSED  [ 40%]
+  tests/test_core.py::test_port_scan_returns_dict         PASSED  [ 60%]
+  tests/test_core.py::test_dns_lookup_returns_dict        PASSED  [ 80%]
+  tests/test_core.py::test_get_vpc_info_no_credentials    PASSED  [100%]
+
+  ============================== 5 passed in 0.34s ===============================
+
+Duration: 28s
+Conclusion: SUCCESS
+
+
+================================================================================
+CI REPAIR HISTORY
+================================================================================
+
+Run #1 — Initial workflow push
+  Status: FAILED
+  Cause:  actions/checkout@v1 and actions/setup-python@v1 — outdated versions
+          incompatible with current GitHub Actions runner environment
+
+Run #2 — Actions version update
+  Status: FAILED
+  Cause:  setup.py used find_packages() without setuptools imported explicitly
+          pip install -e . failed during CI dependency install step
+
+Run #3 — Autonomous CI repair branch (fix-setup-import)
+  Status: PASSED
+  Fix:    Updated actions to @v4/@v5, added explicit setuptools import in setup.py
+          Diagnosed end-to-end using Claude Code autonomous repair mode
+
+Run #4 — Merge to main
+  Status: PASSED
+  Result: Pipeline stable. All subsequent pushes pass.
+
+
+================================================================================
+LOCAL VALIDATION COMMANDS
+================================================================================
+
+# Compile check (catches syntax errors before push)
+$ python3 -m compileall . -q
+COMPILE OK
+
+# Full test suite
+$ python3 -m pytest tests/ -v
+5 passed in 0.26s
+
+REAL-WORLD USE:
+  - CI runs on every push — catches regressions before they reach production
+  - boto3 call mocked in test_get_vpc_info_no_credentials — no AWS account needed
+  - Passing CI badge proves the tool is functional and not just a code dump
