@@ -12,6 +12,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) — Added / Cha
 - `--region` flag for `aws-vpc` and `aws-ec2` subcommands *(planned)*
 - `--output json` flag for pipeline-friendly output *(planned)*
 - Route table and security group inspection via AWS CLI *(planned)*
+- `evidence/` directory with real local validation outputs *(added in tier-3 branch)*
+- `logs/local-validation.log` with full chronological command log *(added in tier-3 branch)*
+
+### Fixed
+- `setup.py` missing `py_modules=["main"]` — `nmcli` entry point raised `ModuleNotFoundError`
+  on clean `pip install -e .`. Bug was masked in CI because tests import the `nmcli` package
+  directly and never invoke the entry point script.
 
 ---
 
