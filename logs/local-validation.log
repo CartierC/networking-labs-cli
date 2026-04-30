@@ -1,0 +1,298 @@
+================================================================================
+LOCAL VALIDATION LOG — networking-labs-cli
+Date: 2026-04-30
+Host: macOS (Darwin 25.4.0)
+Python: 3.14.3 (venv)
+Branch: feature/tier-3-evidence-pack
+================================================================================
+
+--------------------------------------------------------------------------------
+[1/8] ENVIRONMENT SETUP
+--------------------------------------------------------------------------------
+
+$ python3 -m venv venv && source venv/bin/activate
+$ pip install boto3 botocore pytest flake8 -q
+$ pip install -e .
+
+RESULT: PASS — all dependencies installed; entry point registered as `nmcli`
+
+NOTE: entry point bug discovered and fixed during this session.
+setup.py was missing `py_modules=['main']`, causing ModuleNotFoundError when
+running the `nmcli` console script. Fix: added py_modules=["main"] to setup.py.
+All commands work correctly after reinstall.
+
+--------------------------------------------------------------------------------
+[2/8] CLI HELP — nmcli --help
+--------------------------------------------------------------------------------
+
+$ nmcli --help
+
+usage: nmcli [-h] {ping,traceroute,dns,portscan,aws-vpc,aws-ec2} ...
+
+Network Automation CLI — production-grade diagnostics & AWS integration
+
+positional arguments:
+  {ping,traceroute,dns,portscan,aws-vpc,aws-ec2}
+    ping                ICMP ping a host
+    traceroute          Trace route to host
+    dns                 DNS record lookup
+    portscan            Scan common ports
+    aws-vpc             List AWS VPCs
+    aws-ec2             List EC2 instances
+
+options:
+  -h, --help            show this help message and exit
+
+RESULT: PASS — all 6 subcommands registered and displayed
+
+--------------------------------------------------------------------------------
+[3/8] DNS LOOKUPS — nmcli dns
+--------------------------------------------------------------------------------
+
+$ nmcli dns github.com
+
+2026-04-30 12:38:46,179 [INFO] Resolving DNS for github.com
+  A        → 140.82.113.3
+  AAAA     → ::ffff:140.82.113.3
+  PTR      → lb-140-82-113-3-iad.github.com
+  aliases  → ['3.113.82.140.in-addr.arpa']
+
+$ nmcli dns google.com
+
+2026-04-30 12:39:10,996 [INFO] Resolving DNS for google.com
+  A        → 142.251.15.138
+  AAAA     → 2607:f8b0:4002:c2c::71
+  PTR      → yl-in-f138.1e100.net
+  aliases  → ['138.15.251.142.in-addr.arpa']
+
+$ nmcli dns cloudflare.com
+
+2026-04-30 12:38:48,254 [INFO] Resolving DNS for cloudflare.com
+2026-04-30 12:38:48,380 [WARNING] Reverse DNS failed: [Errno 1] Unknown host
+  A        → 104.16.132.229
+  AAAA     → 2606:4700::6810:84e5
+
+NOTE: PTR warning on cloudflare.com is expected — Cloudflare does not publish
+reverse DNS for their anycast IPs. The tool correctly logs a WARNING and
+continues without crashing.
+
+$ nmcli dns thishostdefinitelydoesnotexist.invalid
+
+2026-04-30 12:39:19,731 [INFO] Resolving DNS for thishostdefinitelydoesnotexist.invalid
+2026-04-30 12:39:19,805 [ERROR] DNS resolution failed: [Errno 8] nodename nor servname provided, or not known
+
+RESULT: PASS — A, AAAA, PTR records resolved; error cases handled gracefully
+
+--------------------------------------------------------------------------------
+[4/8] ICMP PING — nmcli ping
+--------------------------------------------------------------------------------
+
+$ nmcli ping 8.8.8.8 --count 4
+
+2026-04-30 12:39:26,789 [INFO] Pinging 8.8.8.8 (4 packets)
+PING 8.8.8.8 (8.8.8.8): 56 data bytes
+64 bytes from 8.8.8.8: icmp_seq=0 ttl=112 time=21.397 ms
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=112 time=21.107 ms
+64 bytes from 8.8.8.8: icmp_seq=2 ttl=112 time=23.751 ms
+64 bytes from 8.8.8.8: icmp_seq=3 ttl=112 time=16.634 ms
+
+--- 8.8.8.8 ping statistics ---
+4 packets transmitted, 4 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 16.634/20.722/23.751/2.573 ms
+
+RESULT: PASS — 0.0% packet loss, avg RTT 20.7ms to 8.8.8.8 (Google DNS)
+
+--------------------------------------------------------------------------------
+[5/8] PORT SCAN — nmcli portscan
+--------------------------------------------------------------------------------
+
+$ nmcli portscan github.com --ports 22 80 443
+
+2026-04-30 12:39:33,910 [INFO] Scanning 3 ports on github.com
+
+PORT     SERVICE          STATUS
+-----------------------------------
+22       SSH              OPEN
+80       HTTP             OPEN
+443      HTTPS            OPEN
+
+Summary: 3 open, 0 closed
+
+$ nmcli portscan 8.8.8.8 --ports 53 80 443
+
+2026-04-30 12:39:38,164 [INFO] Scanning 3 ports on 8.8.8.8
+
+PORT     SERVICE          STATUS
+-----------------------------------
+53       DNS              OPEN
+80       HTTP             CLOSED
+443      HTTPS            OPEN
+
+Summary: 2 open, 1 closed
+
+NOTE: Port 80 closed on 8.8.8.8 is correct — Google's public DNS (8.8.8.8)
+does not serve HTTP. Port 53/TCP for DNS and 443/HTTPS for DNS-over-HTTPS are
+expected to be open. Results match known public configuration.
+
+RESULT: PASS — TCP connect correctly identifies open vs closed ports
+
+--------------------------------------------------------------------------------
+[6/8] TRACEROUTE — nmcli traceroute
+--------------------------------------------------------------------------------
+
+$ nmcli traceroute 8.8.8.8
+
+2026-04-30 12:39:43,297 [INFO] Running traceroute to 8.8.8.8
+ 1  sbe1v1k.lan (192.168.1.1)  10.196 ms  2.884 ms  3.028 ms
+ 2  syn-035-151-157-000.res.spectrum.com (35.151.157.0)  3.444 ms  3.313 ms  3.003 ms
+ 3  * * *
+ 4  syn-035-151-157-000.res.spectrum.com (35.151.157.0)  10.736 ms  11.446 ms  10.716 ms
+ 5  * * *
+ 6  syn-035-151-157-000.res.spectrum.com (35.151.157.0)  22.251 ms  17.179 ms  12.491 ms
+ 7  syn-035-151-157-000.res.spectrum.com (35.151.157.0)  11.411 ms  12.106 ms  11.491 ms
+ 8  lag-63.rcr01sghlgaao.netops.charter.com (159.111.152.46)  18.656 ms  37.511 ms  13.428 ms
+ 9  lag-810.bbr01atlnga.netops.charter.com (96.34.15.19)  13.370 ms  18.342 ms  14.097 ms
+10  lag-801.prr01atlnga.netops.charter.com (96.34.3.35)  13.822 ms  18.695 ms  13.050 ms
+11  142.250.172.234 (142.250.172.234)  15.686 ms * *
+12  * * *
+13  dns.google (8.8.8.8)  23.454 ms  16.229 ms  11.967 ms
+
+PATH ANALYSIS:
+  Hop 1:  192.168.1.1 — local gateway (LAN)
+  Hop 2:  35.151.157.0 — Spectrum ISP edge router
+  Hops 3,5: * * * — ICMP TTL-exceeded filtered (normal behavior)
+  Hop 8:  rcr01sghlgaao — Spectrum regional backbone
+  Hops 9-10: Charter/Spectrum backbone, Atlanta PoP
+  Hop 11: 142.250.172.234 — Google peering point
+  Hop 13: dns.google (8.8.8.8) — destination reached, 13 hops total
+
+RESULT: PASS — 13-hop path traced to destination, no true breaks detected
+
+--------------------------------------------------------------------------------
+[7/8] AWS SUBCOMMANDS — graceful credential error handling
+--------------------------------------------------------------------------------
+
+$ nmcli aws-vpc
+
+2026-04-30 12:40:45,649 [INFO] Fetching VPC data from AWS region: us-east-1
+2026-04-30 12:40:47,741 [ERROR] AWS credentials not configured. Run: aws configure
+EXIT CODE: 0
+
+$ nmcli aws-ec2
+
+2026-04-30 12:40:51,995 [INFO] Fetching EC2 instances in us-east-1
+2026-04-30 12:40:54,083 [ERROR] AWS credentials not configured.
+EXIT CODE: 0
+
+RESULT: PASS — NoCredentialsError caught; structured error logged; clean exit
+NOTE: Requires `aws configure` or IAM role. No live AWS account in this environment.
+The mock-based unit test (test_get_vpc_info_no_credentials) validates this exact
+error path in CI without requiring credentials.
+
+--------------------------------------------------------------------------------
+[8/8] UNIT TESTS — pytest
+--------------------------------------------------------------------------------
+
+$ python3 -m pytest tests/ -v
+
+============================= test session starts ==============================
+platform darwin -- Python 3.14.3, pytest-9.0.3, pluggy-1.6.0 -- venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/carter/Projects/Automation/networking-labs-cli
+collecting ... collected 5 items
+
+tests/test_core.py::test_validate_host_valid           PASSED   [ 20%]
+tests/test_core.py::test_validate_host_invalid         PASSED   [ 40%]
+tests/test_core.py::test_port_scan_returns_dict        PASSED   [ 60%]
+tests/test_core.py::test_dns_lookup_returns_dict       PASSED   [ 80%]
+tests/test_core.py::test_get_vpc_info_no_credentials   PASSED   [100%]
+
+============================== 5 passed in 0.08s ===============================
+
+RESULT: PASS — 5/5 tests passing
+
+================================================================================
+SHELL DIAGNOSTIC SCRIPT — scripts/net-diag.sh
+================================================================================
+
+$ bash scripts/net-diag.sh
+
+===== NETWORK DIAGNOSTIC REPORT =====
+
+1. Connectivity Test
+PING google.com (142.251.15.101): 56 data bytes
+64 bytes from 142.251.15.101: icmp_seq=0 ttl=102 time=24.870 ms
+64 bytes from 142.251.15.101: icmp_seq=1 ttl=102 time=19.517 ms
+64 bytes from 142.251.15.101: icmp_seq=2 ttl=102 time=122.277 ms
+
+--- google.com ping statistics ---
+3 packets transmitted, 3 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 19.517/55.555/122.277/47.230 ms
+
+2. DNS Resolution
+Server:   2600:6c5a:5cf0:f0::1
+Address:  2600:6c5a:5cf0:f0::1#53
+
+Non-authoritative answer:
+Name:  github.com
+Address: 140.82.114.3
+
+3. Port Connectivity Check
+Connection to google.com port 80 [tcp/http] succeeded!
+Connection to google.com port 443 [tcp/https] succeeded!
+
+4. Route Trace
+traceroute to google.com (142.251.15.101), 64 hops max, 40 byte packets
+ 1  sbe1v1k.lan (192.168.1.1)  4.057 ms  2.837 ms  3.813 ms
+ 2  syn-035-151-157-000.res.spectrum.com (35.151.157.0)  3.729 ms  3.016 ms  3.513 ms
+ 3  * * *
+ 4  syn-035-151-157-000.res.spectrum.com (35.151.157.0)  16.958 ms  10.278 ms  12.739 ms
+ ...
+13  142.251.70.150 (142.251.70.150)  13.434 ms
+
+===== END REPORT =====
+
+RESULT: PASS — ping, nslookup, nc port check, and traceroute all working
+
+================================================================================
+STATIC ANALYSIS SUMMARY
+================================================================================
+
+$ flake8 nmcli/ main.py --max-line-length=100 --select=E9,F63,F7,F82
+(no output)
+EXIT CODE: 0 — PASS
+
+$ bash -n scripts/net-diag.sh
+(no output)
+EXIT CODE: 0 — PASS
+
+$ python3 -m compileall nmcli/ main.py
+Listing 'nmcli/'...
+Compiling 'main.py'...
+EXIT CODE: 0 — PASS
+
+================================================================================
+OVERALL RESULT: ALL CHECKS PASSED
+================================================================================
+
+ Command                              Result     Notes
+ -------------------------------------------------------------------
+ nmcli --help                         PASS       6 subcommands registered
+ nmcli dns github.com                 PASS       A + AAAA + PTR resolved
+ nmcli dns cloudflare.com             PASS       A + AAAA; PTR warning expected
+ nmcli dns (invalid host)             PASS       Graceful error, no crash
+ nmcli ping 8.8.8.8 --count 4        PASS       0% loss, avg 20.7ms
+ nmcli portscan github.com            PASS       22/80/443 all OPEN
+ nmcli portscan 8.8.8.8              PASS       53/443 OPEN, 80 CLOSED (correct)
+ nmcli traceroute 8.8.8.8            PASS       13 hops to dns.google
+ nmcli aws-vpc (no creds)            PASS       Graceful error, exit 0
+ nmcli aws-ec2 (no creds)            PASS       Graceful error, exit 0
+ pytest tests/ -v                     PASS       5/5 tests
+ flake8 (errors-only)                 PASS       0 errors
+ bash -n net-diag.sh                  PASS       Valid syntax
+ python3 -m compileall                PASS       No syntax errors
+ bash scripts/net-diag.sh             PASS       All 4 checks working
+ -------------------------------------------------------------------
+ BUGS FOUND AND FIXED:
+   setup.py missing py_modules=['main'] — entry point failed on install.
+   Fixed: added py_modules=["main"] to setup.py. Documented in CHANGELOG.
