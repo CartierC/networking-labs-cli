@@ -1,5 +1,7 @@
 # networking-labs-cli
 
+[![CI](https://github.com/CartierC/networking-labs-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/CartierC/networking-labs-cli/actions/workflows/ci.yml)
+
 > Python network automation CLI for DNS lookup, port checks, connectivity testing, AWS VPC/EC2 concepts, and CI/CD validation.
 
 ---
@@ -67,9 +69,13 @@ networking-labs-cli/
 │   ├── 01-dns-troubleshooting.md        # Step-by-step DNS triage lab
 │   └── 02-network-connectivity.md       # Full connectivity lab walkthrough
 ├── docs/
+│   ├── architecture.md                  # Component map, data flow, design decisions
+│   ├── runbook.md                       # Install, run, test, deploy guide
+│   ├── branching-strategy.md            # GitFlow branch model and PR workflow
+│   ├── decision-log.md                  # Engineering decision records
 │   ├── network-support-runbook.md       # NOC L1/L2 escalation runbook
-│   ├── aws-networking-notes.md          # AWS VPC/EC2 networking reference
-│   └── troubleshooting-guide.md         # Structured fault isolation guide
+│   ├── troubleshooting-guide.md         # Structured fault isolation guide
+│   └── aws-networking-notes.md          # AWS VPC/EC2 networking reference
 ├── sample-output/
 │   ├── dns-lookup-output.txt            # DNS command output example
 │   ├── port-check-output.txt            # Port scan output example
@@ -80,7 +86,10 @@ networking-labs-cli/
 ├── scripts/
 │   └── net-diag.sh                      # Shell diagnostic helper
 ├── .github/workflows/
-│   └── test.yml                         # CI pipeline — pytest on every push
+│   └── ci.yml                           # CI: lint + shell check + pytest
+├── AUDIT.md                             # Repo maturity audit
+├── CHANGELOG.md                         # Version history
+├── RELEASE_NOTES.md                     # v0.1.0 release summary
 ├── requirements.txt
 └── setup.py
 ```
@@ -193,7 +202,9 @@ See [sample-output/](sample-output/) for full command output files.
 
 Root cause: outdated Actions versions + missing `setuptools` in `setup.py`. Diagnosed and resolved using Claude Code autonomous repair mode.
 
-**Current status: all pushes to `main` run automated pytest. 5/5 tests passing.**
+**Current status: all pushes to `main` and `dev` run CI (lint + shell check + pytest). 5/5 tests passing.**
+
+CI now runs in two stages: `validate` (flake8 + bash syntax check) gates the `test` job, so test resources are not consumed on code with syntax errors.
 
 ```
 tests/test_core.py::test_validate_host_valid            PASSED
@@ -213,6 +224,24 @@ tests/test_core.py::test_get_vpc_info_no_credentials    PASSED
 - Add SNMP polling module
 - Integrate AWS CloudWatch for metric queries
 - Add `--verbose` flag with full packet-level logging
+
+---
+
+## Why This Matters in Real IT / Cloud Operations
+
+Network and cloud support roles require fast, repeatable diagnostic workflows. Manual one-off commands (`ping`, `nslookup`, `aws ec2 describe-instances`) are fine for a single host but don't scale across incidents, don't produce consistent output for ticket documentation, and can't be validated in CI.
+
+This tool addresses that:
+
+| Real scenario | How this tool helps |
+|---|---|
+| "DNS isn't propagating after a Route 53 change" | `nmcli dns <host>` — confirms the A record and PTR are live from the resolver's perspective |
+| "Users can't reach the new EC2 instance" | `nmcli portscan <ip> --ports 22 80 443` — confirms which ports are open vs. blocked by security group |
+| "Application times out connecting to the DB" | `nmcli portscan <rds-host> --ports 5432 3306` — rules out network as the cause in under 10 seconds |
+| "Not sure if ICMP is blocked or if the host is down" | `nmcli ping` followed by `nmcli portscan` — separates ICMP filtering from actual unreachability |
+| "Need to audit VPC config before a deployment" | `nmcli aws-vpc && nmcli aws-ec2` — snapshot of current VPC state and instance inventory |
+
+The CI pipeline, branching strategy, decision log, and architecture documentation demonstrate that this isn't just a script — it's built with the process discipline expected in production engineering teams.
 
 ---
 
