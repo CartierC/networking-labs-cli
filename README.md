@@ -191,6 +191,29 @@ See [sample-output/](sample-output/) for full command output files.
 
 ---
 
+## Evidence / Validation
+
+All commands below were run locally and outputs captured verbatim on 2026-04-30. See [evidence/validation-summary.md](evidence/validation-summary.md) for the complete report and [logs/local-validation.log](logs/local-validation.log) for the full chronological log.
+
+| Command | Live Result |
+|---|---|
+| `nmcli dns github.com` | A=140.82.113.3, AAAA, PTR=lb-140-82-113-3-iad.github.com |
+| `nmcli dns google.com` | A=142.251.15.138, AAAA=2607:f8b0:4002:c2c::71, PTR resolved |
+| `nmcli dns <invalid host>` | Graceful logged error — no crash, exit 0 |
+| `nmcli ping 8.8.8.8 --count 4` | 0.0% packet loss, avg RTT 20.7ms |
+| `nmcli portscan github.com --ports 22 80 443` | 22 OPEN / 80 OPEN / 443 OPEN |
+| `nmcli portscan 8.8.8.8 --ports 53 80 443` | 53 OPEN / 80 CLOSED / 443 OPEN |
+| `nmcli traceroute 8.8.8.8` | 13 hops — reaches dns.google |
+| `nmcli aws-vpc` (no creds) | NoCredentialsError caught, clean exit |
+| `pytest tests/ -v` | 5/5 PASSED (Python 3.14.3) |
+| `flake8 --select=E9,F63,F7,F82` | 0 errors |
+| `bash -n scripts/net-diag.sh` | Valid bash syntax |
+| `bash scripts/net-diag.sh` | ping + nslookup + nc + traceroute all working |
+
+**Bug found and fixed during evidence run:** `setup.py` was missing `py_modules=["main"]`, causing `ModuleNotFoundError` on a clean `pip install -e .`. CI passed because the test runner imports from the `nmcli` package directly — it never calls the entry point script. Fixed and documented in [evidence/validation-summary.md](evidence/validation-summary.md).
+
+---
+
 ## CI / Validation
 
 | Run | Trigger | Result |
@@ -207,11 +230,16 @@ Root cause: outdated Actions versions + missing `setuptools` in `setup.py`. Diag
 CI now runs in two stages: `validate` (flake8 + bash syntax check) gates the `test` job, so test resources are not consumed on code with syntax errors.
 
 ```
-tests/test_core.py::test_validate_host_valid            PASSED
-tests/test_core.py::test_validate_host_invalid          PASSED
-tests/test_core.py::test_port_scan_returns_dict         PASSED
-tests/test_core.py::test_dns_lookup_returns_dict        PASSED
-tests/test_core.py::test_get_vpc_info_no_credentials    PASSED
+platform darwin -- Python 3.14.3, pytest-9.0.3
+rootdir: networking-labs-cli
+
+tests/test_core.py::test_validate_host_valid           PASSED   [ 20%]
+tests/test_core.py::test_validate_host_invalid         PASSED   [ 40%]
+tests/test_core.py::test_port_scan_returns_dict        PASSED   [ 60%]
+tests/test_core.py::test_dns_lookup_returns_dict       PASSED   [ 80%]
+tests/test_core.py::test_get_vpc_info_no_credentials   PASSED   [100%]
+
+5 passed in 0.08s
 ```
 
 ---
